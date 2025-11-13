@@ -2,6 +2,7 @@
 
 export const BACKEND_URL = "http://localhost:5000";
 export const JOKE_API_URL = "https://official-joke-api.appspot.com/random_joke";
+export const HEART_API_URL = "https://marcconrad.com/uob/heart/api.php";
 
 // Add other configuration constants here
 export const MAX_RETRIES = 3;

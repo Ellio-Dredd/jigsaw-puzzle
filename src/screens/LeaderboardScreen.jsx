@@ -3,7 +3,7 @@ import GameButton from '../components/GameButton';
 import RoboHashAvatar from '../components/RoboHashAvatar';
 import FunFactBanner from '../components/FunFactBanner';
 import { fetchWithRetry } from '../utils/api';
-import { BACKEND_URL } from '../config';
+import { supabase } from "../supabaseClient"; 
 
 /**
  * Leaderboard screen component
@@ -16,52 +16,27 @@ const LeaderboardScreen = ({ setScreen, authData }) => {
   const fetchLeaderboard = useCallback(async () => {
     setLoading(true);
     try {
-      // In production, this would fetch real data from backend
-      await fetchWithRetry(`${BACKEND_URL}/api/game/leaderboard`);
+    
+      //  Fetch leaderboard data from Supabase
+      const { data, error } = await supabase
+        .from("leaderboard")
+        .select("*")
+        .order("score", { ascending: false }) // highest first
 
-      // Demo leaderboard data
-      const dummyLeaderboard = [
-        { 
-          rank: 1, 
-          userId: "elitecoder", 
-          score: 9850, 
-          time: "0:25", 
-          robohashUrl: `https://robohash.org/elitecoder?set=set2` 
-        },
-        { 
-          rank: 2, 
-          userId: "cipher_punk", 
-          score: 9210, 
-          time: "0:31", 
-          robohashUrl: `https://robohash.org/cipher_punk?set=set2` 
-        },
-        { 
-          rank: 3, 
-          userId: authData.userId, 
-          score: 8700, 
-          time: "0:45", 
-          robohashUrl: authData.robohashUrl 
-        },
-        { 
-          rank: 4, 
-          userId: "guestuser", 
-          score: 7900, 
-          time: "0:52", 
-          robohashUrl: `https://robohash.org/guestuser?set=set2` 
-        },
-        { 
-          rank: 5, 
-          userId: "fast_solver", 
-          score: 7550, 
-          time: "1:01", 
-          robohashUrl: `https://robohash.org/fast_solver?set=set2` 
-        },
-      ].map(entry => ({
-        ...entry,
-        isCurrentUser: entry.userId === authData.userId
+
+       if (error) throw error;
+
+       //Map leaderboard entries + assign rank + robohash avatar
+     const formatted = data.map((row, index) => ({
+        rank: index + 1,
+        username: row.username,
+        score: row.score,
+        time: row.time ?? "—",
+        robohashUrl: `https://robohash.org/${row.user_id}.png?set=set2`,
+        isCurrentUser: row.user_id === authData.userId
       }));
 
-      setLeaderboard(dummyLeaderboard);
+      setLeaderboard(formatted);
     } catch (error) {
       console.error('Leaderboard Fetch Error:', error.message);
       setLeaderboard([]);
@@ -141,7 +116,7 @@ const LeaderboardScreen = ({ setScreen, authData }) => {
                       size='h-8 w-8' 
                     />
                     <span>
-                      {player.userId} {player.isCurrentUser && '(You)'}
+                      {player.username} {player.isCurrentUser && '(You)'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">

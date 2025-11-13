@@ -8,7 +8,7 @@ import LeaderboardScreen from './screens/LeaderboardScreen';
  * Manages screen navigation and authentication state
  */
 const App = () => {
-  const [screen, setScreen] = useState('game'); // 'login', 'game', 'leaderboard'
+  const [screen, setScreen] = useState('login'); // 'login', 'game', 'leaderboard'
   const [authData, setAuthData] = useState({
     token: null,
     userId: 'guestuser',

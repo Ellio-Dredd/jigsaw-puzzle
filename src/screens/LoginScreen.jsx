@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import GameButton from '../components/GameButton';
-import { BACKEND_URL } from '../config';
 
+import { supabase } from '../supabaseClient'
 /**
  * Login and signup screen component
  * Handles user authentication and virtual identity creation
  */
+
+
+
+
+
 const LoginScreen = ({ setScreen, setAuthData }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -14,43 +19,59 @@ const LoginScreen = ({ setScreen, setAuthData }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleAuth = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    
-    const endpoint = isLogin ? 'login' : 'register';
-    const payload = isLogin 
-      ? { email, password } 
-      : { username, email, password };
 
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/auth/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+
+
+ const handleAuth = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
+
+  try {
+    let result;
+
+    if (isLogin) {
+      // LOGIN
+      result = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Authentication failed.');
-      }
-
-      setAuthData({
-        token: data.token,
-        userId: data.userId,
-        robohashUrl: data.robohashUrl,
+    } else {
+      // SIGN UP
+      result = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username }, // This stores username in user_metadata
+        },
       });
-      setScreen('game');
-
-    } catch (error) {
-      setError(error.message);
-      console.error('Auth Error:', error.message);
-    } finally {
-      setLoading(false);
     }
-  };
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    const { session, user } = result.data;
+
+    // Generate avatar based on user.id
+    const robohashUrl = `https://robohash.org/${user.id}.png?size=150x150&set=set4`;
+
+    // Store auth data like before
+    setAuthData({
+      token: session?.access_token,
+      userId: user.id,
+      robohashUrl,
+    });
+
+    setScreen('game');
+
+  } catch (err) {
+    setError(err.message);
+    console.error("Auth Error:", err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
